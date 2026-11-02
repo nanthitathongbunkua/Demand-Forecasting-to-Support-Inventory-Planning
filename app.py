@@ -15,94 +15,547 @@ from statsmodels.tsa.holtwinters import ExponentialSmoothing
 warnings.filterwarnings("ignore")
 
 # ======================================================================
-# 1. ตั้งค่าหน้าเว็บและธีม (Sidebar เมนู / Hero / การ์ดสีพาสเทล / แผงด้านขวา)
+# ตั้งค่าหน้าเว็บและธีม
 # ======================================================================
-st.set_page_config(page_title="Demand Forecasting to Support Inventory Planning", page_icon="🛍️", layout="wide", initial_sidebar_state="expanded")
 
-ACCENT, FESTIVE, GREY = "#1F6FF5", "#F28C28", "#9AA5B5"
+# ======================================================================
+# 1. ตั้งค่าหน้าเว็บและธีม (สไตล์ Schedule dashboard: เทาอ่อน / ขาว / ดำ / พาสเทล)
+# ======================================================================
+st.set_page_config(page_title="Demand Forecasting to Support Inventory Planning", page_icon="🛍️",
+                   layout="wide", initial_sidebar_state="expanded")
+
+# สีกราฟ: ม่วงพาสเทลเข้ม / ส้มพีช / เทา
+ACCENT, FESTIVE, GREY = "#4A90E2", "#F4A38C", "#B8CDE0"
 
 st.markdown("""
 <style>
   #MainMenu, footer, .stAppDeployButton {display:none !important;}
   header[data-testid="stHeader"] {background:transparent;}
-  .stApp {background:linear-gradient(180deg,#E6F1FF 0%,#F3F8FF 45%,#F7FAFF 100%);}
+  .stApp {background:#D9DADC;}
   html, body, [class*="css"] {font-family:'Inter','Noto Sans Thai','Segoe UI',sans-serif;}
-  .block-container {max-width:1500px; padding:1.4rem 2rem 2rem; font-size:1.02rem;}
-  h1 {font-size:1.9rem !important; font-weight:800 !important;}
-  h2, h3 {font-weight:700 !important; color:#0F1B3D;}
-  [data-testid="stMetricValue"] {font-size:1.7rem; font-weight:800;}
-  [data-testid="stMetricLabel"] p {font-size:.95rem; color:#475467;}
 
-  /* ----- Sidebar ----- */
-  section[data-testid="stSidebar"] {background:#F8FBFF; border-right:1px solid #E3EDFA;}
-  section[data-testid="stSidebar"] [role="radiogroup"] {gap:.25rem;}
-  section[data-testid="stSidebar"] [role="radiogroup"] label {padding:.7rem 1rem; border-radius:14px; width:100%; cursor:pointer;}
+  /* แผงหลักสีขาวมุมโค้งเหมือนในภาพ */
+  .block-container {max-width:1500px; padding:1.6rem 2rem 2rem; font-size:.98rem; background:#fff;
+        border-radius:28px; margin-top:1.2rem; margin-bottom:1.2rem; box-shadow:0 20px 50px rgba(0,0,0,.08);}
+  h1 {font-size:1.8rem !important; font-weight:700 !important; color:#111;}
+  h2, h3 {font-weight:700 !important; color:#111;}
+  [data-testid="stMetricValue"] {font-size:1.6rem; font-weight:700; color:#111;}
+  [data-testid="stMetricLabel"] p {font-size:.9rem; color:#6B7280;}
+
+  /* ----- Sidebar: ไล่สีมิ้นต์ -> เทาอ่อน ----- */
+  section[data-testid="stSidebar"] {background:linear-gradient(160deg,#DDEBEC 0%,#EEF3F3 35%,#F5F5F6 70%);
+        border-right:none;}
+  section[data-testid="stSidebar"] [role="radiogroup"] {gap:.2rem;}
+  section[data-testid="stSidebar"] [role="radiogroup"] label {padding:.6rem 1rem; border-radius:999px; width:100%; cursor:pointer;}
   section[data-testid="stSidebar"] [role="radiogroup"] label > div:first-child {display:none;}
-  section[data-testid="stSidebar"] [role="radiogroup"] label p {font-weight:600; color:#475467; font-size:1rem;}
-  section[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {background:#DCEBFF;}
-  section[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) p {color:#1F6FF5;}
-  .brand {display:flex; align-items:center; gap:.7rem; margin:.3rem 0 1.2rem;}
-  .brand .logo {width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#BFDDFF,#7CB6FF);
-                display:flex;align-items:center;justify-content:center;font-size:1.6rem;}
-  .brand b {font-size:1.35rem; color:#0F1B3D;} .brand small {display:block; color:#667085; font-size:.72rem;}
-  .st-key-upload_card {background:#E4EFFF; border-radius:20px; padding:14px 14px 6px;}
+  section[data-testid="stSidebar"] [role="radiogroup"] label p {font-weight:500; color:#374151; font-size:.95rem;}
+  section[data-testid="stSidebar"] [role="radiogroup"] label:hover {background:rgba(255,255,255,.55);}
+  section[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.05);}
+  section[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) p {color:#111; font-weight:700;}
+  .brand {display:flex; align-items:center; gap:.7rem; margin:.3rem 0 1.4rem;}
+  .brand .logo {width:44px;height:44px;border-radius:14px;background:#2B2F36;color:#fff;
+                display:flex;align-items:center;justify-content:center;font-size:1.4rem;}
+  .brand b {font-size:1.2rem; color:#111;} .brand small {display:block; color:#6B7280; font-size:.72rem;}
+  .st-key-upload_card {background:rgba(255,255,255,.6); border-radius:20px; padding:14px 14px 6px;}
   .st-key-upload_card [data-testid="stFileUploaderDropzone"] {background:#fff; border-radius:14px;}
-  .store-chip {display:flex; align-items:center; gap:.7rem; background:#fff; border:1px solid #E3EDFA; border-radius:18px;
-               padding:.7rem .9rem; margin-top:.8rem;}
-  .store-chip .av {width:40px;height:40px;border-radius:50%;background:#DCEBFF;display:flex;align-items:center;justify-content:center;}
-  .store-chip b {font-size:.92rem; color:#0F1B3D;} .store-chip small {display:block; color:#667085; font-size:.74rem;}
 
-  /* ----- Inputs / buttons ----- */
-  [data-testid="stTextInput"] input {border-radius:999px; background:#fff; border:1px solid #DCE8F8; padding:.65rem 1.1rem;}
-  div[data-baseweb="select"] > div {border-radius:14px !important;}
-  .stButton > button, [data-testid="stBaseButton-secondary"] {border-radius:999px; font-weight:700; padding:.55rem 1.4rem;}
-  button[kind="primary"], [data-testid="stBaseButton-primary"] {background:#1F6FF5 !important; color:#fff !important; border:none !important;}
-  [data-testid="stMain"] [role="radiogroup"] label {background:#fff; padding:.2rem .85rem; border-radius:999px; border:1px solid #DCE8F8;}
+  /* ----- Inputs / buttons: ปุ่มดำ + แท็บพิลล์ดำ ----- */
+  [data-testid="stTextInput"] input {border-radius:999px; background:#fff; border:1px solid #E5E7EB; padding:.6rem 1.1rem;}
+  div[data-baseweb="select"] > div {border-radius:999px !important; border-color:#E5E7EB !important;}
+  .stButton > button, [data-testid="stBaseButton-secondary"] {border-radius:999px; font-weight:600; padding:.5rem 1.4rem;
+        border:1px solid #E5E7EB; background:#fff; color:#111;}
+  button[kind="primary"], [data-testid="stBaseButton-primary"] {background:#111 !important; color:#fff !important; border:none !important;}
+  [data-testid="stMain"] [role="radiogroup"] label {background:#F3F4F6; padding:.15rem .9rem; border-radius:999px; border:none;}
   [data-testid="stMain"] [role="radiogroup"] label > div:first-child {display:none;}
-  [data-testid="stMain"] [role="radiogroup"] label:has(input:checked) {background:#1F6FF5; border-color:#1F6FF5;}
+  [data-testid="stMain"] [role="radiogroup"] label p {color:#6B7280; font-size:.88rem;}
+  [data-testid="stMain"] [role="radiogroup"] label:has(input:checked) {background:#111;}
   [data-testid="stMain"] [role="radiogroup"] label:has(input:checked) p {color:#fff !important;}
 
   /* ----- Cards ----- */
-  [data-testid="stVerticalBlockBorderWrapper"] {background:#fff; border-radius:22px; border:1px solid #E3EDFA;
-        box-shadow:0 6px 24px rgba(40,90,170,.06);}
-  .st-key-hero {background:linear-gradient(135deg,#BFDDFF 0%,#E3F0FF 60%,#F1F8FF 100%); border-radius:26px; padding:30px 34px;
-        box-shadow:0 8px 28px rgba(40,90,170,.10);}
-  .hero-h {font-size:2.3rem; font-weight:800; line-height:1.2; color:#0B1736; margin:0;}
-  .hero-h span {color:#1F6FF5;}
-  .hero-p {font-size:1.05rem; color:#1F2A44; margin:.8rem 0 1.1rem;}
-  .hero-art {font-size:8rem; text-align:center; line-height:1; filter:drop-shadow(0 12px 18px rgba(30,80,160,.25));}
+  [data-testid="stVerticalBlockBorderWrapper"] {background:#fff; border-radius:22px; border:1px solid #EEF0F2;
+        box-shadow:0 4px 18px rgba(0,0,0,.04);}
+  .st-key-hero {background:linear-gradient(135deg,#E4E3FA 0%,#EEF0FB 55%,#F7F7FB 100%); border-radius:26px; padding:30px 34px;
+        box-shadow:none;}
+  .hero-h {font-size:2.2rem; font-weight:800; line-height:1.2; color:#111; margin:0;}
+  .hero-h span {color:#7B83EB;}
+  .hero-p {font-size:1rem; color:#4B5563; margin:.8rem 0 1.1rem;}
+  .hero-art {font-size:7.5rem; text-align:center; line-height:1; filter:drop-shadow(0 12px 18px rgba(0,0,0,.12));}
   .hero-art small {display:block; font-size:2rem; margin-top:.6rem; letter-spacing:.4rem;}
-  .pillbadge {display:inline-block; background:#fff; border:1px solid #DCE8F8; border-radius:999px; padding:.45rem 1rem;
-              font-size:.92rem; font-weight:700; margin-left:.5rem;}
+  .pillbadge {display:inline-block; background:#fff; border:1px solid #E5E7EB; border-radius:999px; padding:.4rem 1rem;
+              font-size:.88rem; font-weight:600; margin-left:.5rem;}
   .tile {border-radius:20px; padding:16px 16px 14px; min-height:112px;}
-  .tile .ic {width:44px;height:44px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;
-             font-size:1.35rem; margin-bottom:.5rem;}
-  .tile b {display:block; font-size:1.02rem; color:#0F1B3D;} .tile span {font-size:.88rem; color:#475467;}
+  .tile .ic {width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.75);display:flex;align-items:center;
+             justify-content:center; font-size:1.35rem; margin-bottom:.5rem;}
+  .tile b {display:block; font-size:1rem; color:#111;} .tile span {font-size:.86rem; color:#4B5563;}
   .chips {display:flex; flex-wrap:wrap; gap:.7rem;}
-  .chip {display:flex; align-items:center; gap:.6rem; background:#fff; border:1px solid #E3EDFA; border-radius:16px; padding:.55rem .9rem;
-         box-shadow:0 3px 12px rgba(40,90,170,.05); max-width:260px;}
-  .chip .d {font-size:1.3rem;} .chip b {display:block; font-size:.88rem; color:#0F1B3D; white-space:nowrap; overflow:hidden;
-         text-overflow:ellipsis; max-width:190px;} .chip small {color:#667085; font-size:.78rem;}
+  .chip {display:flex; align-items:center; gap:.6rem; background:#fff; border:1px solid #EEF0F2; border-radius:16px; padding:.55rem .9rem;
+         box-shadow:0 2px 10px rgba(0,0,0,.04); max-width:260px;}
+ .chip .d {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 38px;
+    color: #333;
+}
+
+.chip .d svg {
+    width: 34px;
+    height: 34px;
+    display: block;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+} .chip b {display:block; font-size:.88rem; color:#111; white-space:nowrap; overflow:hidden;
+         text-overflow:ellipsis; max-width:190px;} .chip small {color:#6B7280; font-size:.78rem;}
   .donut {width:118px;height:118px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
   .donut-in {width:88px;height:88px;border-radius:50%;background:#fff;display:flex;flex-direction:column;
              align-items:center;justify-content:center;}
-  .donut-in b {font-size:1.45rem; color:#0F1B3D;} .donut-in span {font-size:.72rem; color:#667085;}
+  .donut-in b {font-size:1.45rem; color:#111;} .donut-in span {font-size:.72rem; color:#6B7280;}
   .mini {display:flex; gap:.5rem; align-items:flex-end; height:74px; margin-top:.4rem;}
-  .mini div {flex:1; text-align:center; font-size:.72rem; color:#667085;} .mini i {display:block; border-radius:7px 7px 3px 3px; margin-bottom:3px;}
+  .mini div {flex:1; text-align:center; font-size:.72rem; color:#6B7280;} .mini i {display:block; border-radius:7px 7px 3px 3px; margin-bottom:3px;}
   .lb {display:flex; align-items:center; gap:.6rem; padding:.55rem .6rem; border-radius:14px; margin-bottom:.2rem;}
-  .lb.me {background:#E8F0FB;} .lb .nm {flex:1; font-size:.86rem; font-weight:600; color:#0F1B3D; line-height:1.25;}
-  .lb .lf {font-size:.8rem; font-weight:800; color:#1F6FF5;}
+  .lb .nm {flex:1; font-size:.86rem; font-weight:600; color:#111; line-height:1.25;}
+  .lb .lf {font-size:.8rem; font-weight:800; color:#7B83EB;}
   .medal {width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;
           font-size:.85rem; color:#fff; flex-shrink:0;}
-  .m1 {background:#F5B82E;} .m2 {background:#A9B4C4;} .m3 {background:#F08A4B;} .m4, .m5 {background:#fff; color:#475467; border:1px solid #DCE8F8;}
-  .gift {background:linear-gradient(135deg,#DCEBFF,#EEF5FF); border-radius:22px; padding:18px 18px 16px; border:1px solid #D3E4FA;}
-  .pbar {height:9px; border-radius:99px; background:#C9DDF8; margin-top:.5rem;} .pbar div {height:9px; border-radius:99px; background:#1F6FF5;}
-  .card-t {font-weight:800; font-size:1.05rem; color:#0F1B3D; margin-bottom:.5rem;}
-  .bundle-title {font-size:1.12rem; font-weight:700; color:#101828; margin-bottom:.2rem;}
+  /* Ranking Medal - Blue Gradient */
+.m1 {
+    background: #4A90E2;
+    color: #FFFFFF;
+}
+
+.m2 {
+    background: #78AFE8;
+    color: #FFFFFF;
+}
+
+.m3 {
+    background: #A6C9F0;
+    color: #FFFFFF;
+}
+
+.m4, .m5 {
+    background: #FFFFFF;
+    color: #6B7280;
+    border: 1px solid #DCE5EF;
+}
+  .gift {background:linear-gradient(135deg,#E4E3FA,#F3F3FC); border-radius:22px; padding:18px 18px 16px; border:none;}
+  .pbar {height:9px; border-radius:99px; background:#DCDDF3; margin-top:.5rem;} .pbar div {height:9px; border-radius:99px; background:#111;}
+  .card-t {font-weight:700; font-size:1.02rem; color:#111; margin-bottom:.5rem;}
+  .bundle-title {font-size:1.08rem; font-weight:700; color:#111; margin-bottom:.2rem;}
   .badge {display:inline-block; padding:.15rem .7rem; border-radius:999px; font-size:.82rem; font-weight:700;}
-  .b-high {background:#DCFCE7; color:#166534;} .b-mid {background:#FEF3C7; color:#92400E;}
-  .lead {font-size:1.02rem; color:#475467; margin:.1rem 0 1rem;}
-  .note {font-size:.88rem; color:#667085;}
+  .b-high {background:#D5F5E3; color:#166534;} .b-mid {background:#FDEBC8; color:#92400E;}
+  .lead {font-size:1rem; color:#6B7280; margin:.1rem 0 1rem;}
+  .note {font-size:.86rem; color:#6B7280;}
+
+/* SIDEBAR BACKGROUND */
+[data-testid="stSidebar"] {
+    background-color: #E4EFF0;
+}
+
+/* SIDEBAR BRAND */
+
+.brand {
+    display: flex;
+    align-items: center;
+    margin: .5rem 0 1.5rem;
+}
+
+.brand b {
+    display: block;
+    font-size: 1.2rem !important;
+    font-weight: 750;
+    color: #111;
+}
+
+.brand small {
+    display: block;
+    color: #6B7280;
+    font-size: .78rem !important;
+}
+
+/* MENU HEADING */
+.menu-heading {
+    color: #8A969A;
+    font-size: 15px;
+    margin: 0 0 22px 12px;
+}
+
+/* MENU BUTTON */
+
+/* ----- Sidebar Menu Buttons ----- */
+[data-testid="stSidebar"] .stButton > button {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 16px !important;
+    color: #202020 !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    min-height: 40px !important;
+    height: 40px !important;
+    padding: 6px 16px !important;
+    box-shadow: none !important;
+    justify-content: flex-start !important;
+    margin-bottom: 6px !important;
+}
+
+/* Hover */
+[data-testid="stSidebar"] .stButton > button:hover {
+    background: rgba(255,255,255,0.55) !important;
+}
+
+/* เมนูที่เลือก */
+[data-testid="stSidebar"] .stButton > button[kind="primary"],
+[data-testid="stSidebar"] [data-testid="stBaseButton-primary"] {
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    border: none !important;
+    border-radius: 16px !important;
+    color: #111111 !important;
+    font-weight: 650 !important;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.04) !important;
+}
+
+/* ขนาดไอคอน */
+[data-testid="stSidebar"] .stButton > button [data-testid="stIconMaterial"] {
+    font-size: 20px !important;
+}
+
+
+/* SELECTED MENU */
+[data-testid="stSidebar"] .stButton > button[kind="primary"] {
+    background: #FFFFFF;
+    color: #111111;
+    box-shadow: 0 5px 18px rgba(0,0,0,0.04);
+}
+
+/* ICON SIZE */
+[data-testid="stSidebar"] .stButton > button [data-testid="stIconMaterial"] {
+    font-size: 29px;
+}
+/* บังคับตัวหนังสือเมนู Sidebar ให้หนาและดำทุกเมนู */
+section[data-testid="stSidebar"] div.stButton > button,
+section[data-testid="stSidebar"] div.stButton > button p,
+section[data-testid="stSidebar"] div.stButton > button span {
+    font-weight: 600 !important;
+    color: #000000 !important;
+}
+/* จัดเมนู Sidebar ชิดซ้าย */
+[data-testid="stSidebar"] .stButton > button {
+    justify-content: flex-start !important;
+    text-align: left !important;
+    padding-left: 16px !important;
+}
+
+/* จัดไอคอนและข้อความให้อยู่ชิดซ้าย */
+[data-testid="stSidebar"] .stButton > button div {
+    justify-content: flex-start !important;
+}
+
+/* จัดข้อความเมนูชิดซ้าย */
+[data-testid="stSidebar"] .stButton > button p {
+    text-align: left !important;
+    width: 100% !important;
+}
+
+/* Home dashboard: compact highlight and reference-style spacing */
+/* Home Highlight - Vertical Center */
+.st-key-home_highlight {
+    min-height: 150px;
+    padding: 24px 30px;
+    margin: 0 0 8px;
+    border-radius: 26px;
+
+    background: linear-gradient(
+        120deg,
+        #DCEEF5 0%,
+        #EAF5F9 40%,
+        #F5FAFC 75%,
+        #FFFFFF 100%
+    ) !important;
+
+    border: none !important;
+    box-shadow: none !important;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center !important;
+}
+
+/* Title */
+.st-key-home_highlight .home-highlight-title {
+    font-size: 1.1rem;
+    line-height: 1.5;
+    font-weight: 700;
+    color: #454957;
+    margin: 0 0 12px;
+}
+
+/* Progress Bar */
+.st-key-home_highlight .pbar {
+    height: 9px;
+    border-radius: 99px;
+    background: #D5E8F0;
+    margin-top: 8px;
+}
+
+.st-key-home_highlight .pbar div {
+    height: 9px;
+    border-radius: 99px;
+    background: #111111;
+}
+
+/* Description */
+.st-key-home_highlight .home-highlight-note {
+    font-size: 0.8rem;
+    color: #778995;
+    margin-top: 10px;
+}
+
+/* Progress Bar */
+.st-key-home_highlight .pbar {
+    height: 9px;
+    border-radius: 99px;
+    background: #D5E8F0;
+    margin-top: 10px;
+}
+
+.st-key-home_highlight .pbar div {
+    height: 9px;
+    border-radius: 99px;
+    background: #111111;
+}
+.home-highlight-title {font-size:1.04rem; line-height:1.55; font-weight:700; color:#454957; margin-bottom:12px;}
+.home-highlight-note {font-size:.88rem; color:#777D8B; margin-top:9px;}
+
+/* Search Bar - Minimal Clean Style */
+.st-key-q {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* กรอบช่อง Search */
+.st-key-q div[data-baseweb="input"] {
+    background: #FFFFFF !important;
+    border: 1px solid #DADADA !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    overflow: hidden !important;
+}
+
+/* ลบพื้นหลังชั้นใน */
+.st-key-q div[data-baseweb="input"] > div {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    height: 100% !important;
+}
+
+/* ช่องพิมพ์ */
+.st-key-q input {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+
+    height: 40px !important;
+    min-height: 40px !important;
+    line-height: 40px !important;
+
+    font-size: 15px !important;
+    color: #333333 !important;
+
+    padding: 0 12px 0 40px !important;
+    box-sizing: border-box !important;
+
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23999999' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+
+    background-repeat: no-repeat !important;
+    background-position: 12px center !important;
+    background-size: 22px 22px !important;
+}
+
+.st-key-q input::placeholder {
+    color: #85858D !important;
+    opacity: 1 !important;
+}
+
+/* กรอบ*/
+.st-key-q div[data-baseweb="input"]:focus-within {
+    border: 1px solid #DADADA !important;
+    box-shadow: none !important;
+}
+.tile {min-height:112px;}
+.chips {display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.7rem;}
+.chip {max-width:none; min-width:0; min-height:66px;}
+.chip b {max-width:100%;}
+.home-side-card {padding:2px 0;}
+@media (max-width: 900px) {
+    .chips {grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+
+/* Forecast Card */
+.st-key-nextcard {
+    background: #FFFFFF !important;
+    border: 1.5px solid #D9D9D9 !important;
+    border-radius: 8px !important;
+    padding: 18px 22px !important;
+    box-shadow: none !important;
+}
+
+/* Forecast Title */
+.forecast-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #343541;
+    line-height: 1.6;
+    margin-bottom: 8px;
+}
+
+/* Forecast Subtitle */
+.forecast-subtitle {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #737987;
+    margin-bottom: 22px;
+}
+
+/* Progress */
+.forecast-progress {
+    height: 10px !important;
+    border-radius: 20px !important;
+    background: #DEDEF3 !important;
+    overflow: hidden;
+}
+
+.forecast-progress div {
+    height: 10px !important;
+    background: #111111 !important;
+    border-radius: 20px !important;
+}
+
+        st.markdown("### Next Month Forecast")
+        # Forecast code ...
+
+        st.markdown("### Key Metrics")
+        # KPI code ...
+
+        st.markdown("### Top Products")
+        # Top Products code ...
+
+    with side:
+        # Forecast Accuracy
+
+
+/* Key Metrics */
+.metric-card {
+    height: 144px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 17px 20px;
+    border: none !important;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+.metric-card.blue {
+    background: linear-gradient(
+        180deg, #D7E8F2 0%, #F3F8FD 100%
+    );
+}
+
+.metric-card.green {
+    background: linear-gradient(
+        180deg, #D5F0D7 0%, #F2FBF1 100%
+    );
+}
+
+/* Heading */
+.metric-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #111111;
+    font-size: 16px;
+    font-weight: 700;
+    white-space: nowrap;
+    line-height: 26px;
+}
+
+
+/* ===== KPI Cards ===== */
+.metric-card {
+    width: 100%;
+    height: 120px;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 16px 14px;
+    border: none !important;
+    border-radius: 10px;
+    box-shadow: none !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.metric-card.blue {
+    background: linear-gradient(180deg, #D7E8F2 0%, #F3F8FD 100%);
+}
+
+.metric-card.green {
+    background: linear-gradient(180deg, #D5F0D7 0%, #F2FBF1 100%);
+}
+
+/* Heading */
+.metric-heading {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    min-width: 0;
+    color: #111111;
+    font-size: 14px;
+    line-height: 22px;
+    font-weight: 700;
+}
+
+.metric-heading .metric-label {
+    flex: 1;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.metric-icon {
+    width: 23px;
+    height: 23px;
+    flex: 0 0 23px;
+}
+
+.metric-icon svg {
+    display: block;
+    width: 23px;
+    height: 23px;
+}
+
+/* Value */
+.metric-value {
+    width: 100%;
+    margin-top: 20px;
+    text-align: center;
+    font-size: 20px;
+    line-height: 24px;
+    font-weight: 500;
+    color: #111111;
+    overflow-wrap: anywhere;
+}
+
+ 
 </style>
 """, unsafe_allow_html=True)
 
@@ -116,7 +569,6 @@ TH_DAY = {"Monday": "จันทร์", "Tuesday": "อังคาร", "Wedn
 def thm(period):  # "2011-11" -> "พ.ย. 2011"
     y, m = str(period).split("-")[:2]
     return f"{TH_MONTH[int(m) - 1]} {y}"
-
 
 # ======================================================================
 # 2. โหลดและทำความสะอาดข้อมูล
@@ -359,11 +811,55 @@ def tidy_rules(r):
 # ======================================================================
 # 5. Sidebar: เมนู + อัปโหลดข้อมูลร้านอื่น + ข้อมูลที่ใช้อยู่
 # ======================================================================
-NAV = {"🏠  Home": "home", "📊  Sales": "sales", "🔗  Bundle": "bundle",
-       "📈  Forecast": "forecast", "📦  Product": "product", "ℹ️  About": "about"}
-st.sidebar.markdown('<div class="brand"><div class="logo">🛍️</div><div><b>Retail Insight</b>'
-                    '<small>Demand Forecasting & Bundling</small></div></div>', unsafe_allow_html=True)
-nav = st.sidebar.radio("เมนู", list(NAV), key="nav", label_visibility="collapsed")
+
+NAV = {
+    "Home": "home",
+    "Sales": "sales",
+    "Bundle": "bundle",
+    "Forecast": "forecast",
+    "Product": "product",
+    "About": "about"
+}
+
+MENU_ICONS = {
+    "Home": ":material/home:",
+    "Sales": ":material/monitoring:",
+    "Bundle": ":material/link:",
+    "Forecast": ":material/trending_up:",
+    "Product": ":material/inventory_2:",
+    "About": ":material/info:"
+}
+
+# Sidebar Logo
+st.sidebar.markdown("""
+<div class="brand">
+    <div>
+        <b>Retail Insight</b>
+        <small>Demand Forecasting & Bundling</small>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+if "nav" not in st.session_state:
+    st.session_state.nav = "Home"
+
+for label, value in NAV.items():
+    if st.sidebar.button(
+        label,
+        key=f"menu_{value}",
+        icon=MENU_ICONS[label],
+        use_container_width=True,
+        type="primary" if st.session_state.nav == label else "secondary"
+    ):
+        st.session_state.nav = label
+        st.rerun()
+
+nav = st.session_state.nav
+
+if nav not in NAV:
+    nav = "Home"
+    st.session_state.nav = "Home"
+
 page = NAV[nav]
 st.sidebar.markdown("<div style='height:1.2rem'></div>", unsafe_allow_html=True)
 
@@ -387,8 +883,7 @@ if not using_upload:
         st.error("ไม่พบโฟลเดอร์ app_data/ — รัน `python export_data.py` ก่อน แล้วเปิดแอปใหม่")
         st.stop()
     data_key = "project"
-st.sidebar.markdown(f'<div class="store-chip"><div class="av">🏬</div><div><b>{html.escape(store[:26])}</b>'
-                    f'<small>{store_sub}</small></div></div>', unsafe_allow_html=True)
+
 
 # ---------- ตัวเลขหลัก ----------
 total_sales, total_qty = df["Sales_Value"].sum(), df["Quantity"].sum()
@@ -422,7 +917,7 @@ fc = get_forecast()
 
 # ---------- แถบบน: ค้นหา + ตัวเลขสรุป ----------
 t1, t2 = st.columns([2.2, 1.6])
-q = t1.text_input("ค้นหา", key="q", placeholder="🔍 Search", label_visibility="collapsed")
+q = t1.text_input("ค้นหา", key="q", placeholder="Search", label_visibility="collapsed")
 t2.markdown(f'<div style="text-align:right"><span class="pillbadge"> {total_qty:,.0f} ชิ้น</span>'
             f'<span class="pillbadge"> {money_short(total_sales)}</span></div>', unsafe_allow_html=True)
 st.markdown("<div style='height:.5rem'></div>", unsafe_allow_html=True)
@@ -446,17 +941,21 @@ if page == "home":
                     st.dataframe(rs, hide_index=True)
                     st.caption(f"พบสินค้า {hit['Description'].nunique():,} รายการ · หน้า “สินค้าขายคู่กัน” จะกรองตามคำค้นหานี้ด้วย")
 
-        with st.container(key="hero"):
-            h1, h2 = st.columns([3, 2])
-            with h1:
-                tip = (f"เดือนที่ขายดีที่สุดคือ <b>{thm(peak)}</b> — ช่วงเทศกาล ควรเตรียมสินค้าล่วงหน้า"
-                       if festive_share > 22 else f"เดือนที่ขายดีที่สุดคือ <b>{thm(peak)}</b>")
-                st.markdown(f'<div class="hero-h">สวัสดี! นี่คือ<br><span>ภาพรวมร้านของคุณ</span> 👋</div>'
-                            f'<div class="hero-p">{tip}</div>',
+        # Compact seasonal insight banner, matching the reference layout
+        tip = (f"เดือนที่ขายดีที่สุดคือ {thm(peak)} — ช่วงเทศกาล ควรเตรียมสินค้าล่วงหน้า"
+               if festive_share > 22 else f"เดือนที่ขายดีที่สุดคือ {thm(peak)} — วางแผนสินค้าให้พร้อมก่อนช่วงยอดขายสูง")
+        progress = min(max(float(festive_share), 0), 100)
+        with st.container(key="home_highlight"):
+            hi_left, hi_right = st.columns([3.2, 1.35], vertical_alignment="center")
+            with hi_left:
+                st.markdown(f'<div class="home-highlight-title">{html.escape(tip)}</div>'
+                            f'<div class="pbar"><div style="width:{progress:.0f}%"></div></div>'
+                            f'<div class="home-highlight-note">ยอดขายช่วงเทศกาล พ.ย.–ธ.ค. คิดเป็น {festive_share:.1f}% ของยอดขายทั้งหมด</div>',
                             unsafe_allow_html=True)
-                st.button("ดูสินค้าที่ควรขายคู่กัน  →", type="primary", key="cta_bundle",
-                          on_click=lambda: st.session_state.update(nav="🔗  Bundle"))
-            h2.markdown('<div class="hero-art">🛍️<small>📦 🏷️ ✨</small></div>', unsafe_allow_html=True)
+            with hi_right:
+                if st.button("ดูสินค้าที่ควรขายคู่กัน", key="home_bundle_link", type="primary", use_container_width=True):
+                    st.session_state.nav = "Bundle"
+                    st.rerun()
 
         st.markdown("### Next Month Forecast")
         with st.container(key="nextcard", border=True):
@@ -466,27 +965,96 @@ if page == "home":
                 mq, _ = monthly_qty(df)
                 nxt = fc["fut"].iloc[0]
                 prog = float(min(max(nxt["Forecast"] / mq.max(), 0), 1))
-                n1, n2, n3 = st.columns([0.7, 3, 1.2])
-                n1.markdown('<div class="tile" style="background:#E4EFFF;text-align:center;font-size:2.2rem;'
-                            'min-height:96px;padding-top:22px">📈</div>', unsafe_allow_html=True)
+                n2, n3 = st.columns([4, 1.2], vertical_alignment="center")
+                
                 n2.markdown(f"**{thm(nxt['Month'])}** — คาดว่าจะขายได้ประมาณ **{nxt['Forecast']:,.0f} ชิ้น**<br>"
                             f"<span class='note'>เทียบกับเดือนที่ขายสูงสุด ({prog:.0%})</span>"
                             f"<div class='pbar'><div style='width:{prog*100:.0f}%'></div></div>", unsafe_allow_html=True)
-                n3.button("ดูรายละเอียด", type="primary", key="go_fc",
-                          on_click=lambda: st.session_state.update(nav="📈  Forecast"))
+                if n3.button("ดูรายละเอียด", type="primary", key="go_fc"):
+                    st.session_state.nav = "Forecast"
+                    st.rerun()
 
+
+        
         st.markdown("### Key Metrics")
-        k = st.columns(4)
-        tiles = [("#EAE5FB", "💷", "Total Revenue", money_short(total_sales)), ("#FDE6E6", "📦", "Total Quantity Sold", f"{total_qty:,.0f} ชิ้น"),
-                 ("#DDF3E4", "🏷️", "Total Products", f"{n_products:,} รายการ"), ("#FDEBD3", "🏆", "Peak Month", thm(peak))]
-        for col, (bg, ic, t, v) in zip(k, tiles):
-            col.markdown(f'<div class="tile" style="background:{bg}"><div class="ic">{ic}</div><b>{t}</b><span>{v}</span></div>',
-                         unsafe_allow_html=True)
 
+        k = st.columns(4, gap="small")
+
+        icons = [
+            # Dollar
+            """<svg viewBox="0 0 24 24" fill="none"
+                stroke="#333333" stroke-width="1.8"
+                stroke-linecap="round">
+                <path d="M12 2v20 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>""",
+
+            # Box / Quantity
+            """<svg viewBox="0 0 24 24" fill="none"
+                stroke="#333333" stroke-width="1.8"
+                stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18"/>
+                <rect x="7" y="7" width="10" height="10"/>
+            </svg>""",
+
+            # Shopping Cart
+            """<svg viewBox="0 0 24 24" fill="none"
+                stroke="#333333" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 3h2l3 13h12l3-9H5"/>
+                <circle cx="9" cy="20" r="1.5"/>
+                <circle cx="18" cy="20" r="1.5"/>
+                <path d="M13 4v7 M10 7.5h6"/>
+            </svg>""",
+
+            # Calendar Clock
+            """<svg viewBox="0 0 24 24" fill="none"
+                stroke="#333333" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="5" width="18" height="16" rx="1.5"/>
+                <path d="M7 2v6 M17 2v6 M3 10h18"/>
+                <circle cx="16.5" cy="16" r="3"/>
+                <path d="M16.5 14.5v1.5l1.2.8"/>
+            </svg>"""
+        ]
+
+        tiles = [
+            ("blue", "Total Revenue", money_short(total_sales)),
+            ("green", "Total Quantity Sold", f"{total_qty:,.0f} ชิ้น"),
+            ("blue", "Total Products", f"{n_products:,} รายการ"),
+            ("green", "Peak Month", thm(peak))
+        ]
+
+        for col, (icon, (color, title, value)) in zip(k, zip(icons, tiles)):
+            col.markdown(f"""
+                <div class="metric-card {color}">
+                    <div class="metric-heading">
+                        <span class="metric-icon">{icon}</span>
+                        <span class="metric-label">{title}</span>
+                    </div>
+                    <div class="metric-value">{value}</div>
+                </div>
+            """, unsafe_allow_html=True)
+
+
+        
         st.markdown("### Top Products")
         topc = df.groupby("Description")["Quantity"].sum().nlargest(5)
-        chips = "".join(f'<div class="chip"><span class="d">🏷️</span><div><b title="{html.escape(n)}">{html.escape(n)}</b>'
-                        f'<small>ขายได้ {v:,.0f} ชิ้น</small></div></div>' for n, v in topc.items())
+
+        # Package Icon (SVG)
+        package_icon = """
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m12 3 8.5 4.7v8.6L12 21l-8.5-4.7V7.7L12 3Z"/>
+            <path d="m3.5 7.7 8.5 4.8 8.5-4.8"/>
+            <path d="M12 12.5V21"/>
+            <path d="m7.7 5.4 8.6 4.8"/>
+        </svg>
+        """
+
+        chips = "".join(
+            f'<div class="chip"><span class="d">{package_icon}</span><div style="min-width:0"><b title="{html.escape(str(name))}">{html.escape(str(name))}</b>'
+            f'<small>ขายได้ {qty:,.0f} ชิ้น</small></div></div>'
+            for name, qty in topc.items())
+
         st.markdown(f'<div class="chips">{chips}</div>', unsafe_allow_html=True)
 
     with side:
@@ -499,14 +1067,14 @@ if page == "home":
                 pct = max(0, min(100, 100 - w))
                 q_txt = "High Accuracy" if w < 10 else ("Moderate" if w < 20 else "Low Accuracy")
                 d1, d2 = st.columns([1.1, 1])
-                d1.markdown(f'<div class="donut" style="background:conic-gradient({ACCENT} {pct}%, #DCE8F8 0)">'
-                            f'<div class="donut-in"><b>{pct:.0f}%</b><span>High Accuracy</span></div></div>', unsafe_allow_html=True)
-                d2.markdown(f"**{q_txt}**<br><span class='note'>คลาดเคลื่อนจากของจริง {w:.1f}% (ใกล้เคียง = 100 − WAPE)</span>", unsafe_allow_html=True)
+                d1.markdown(f'<div class="donut" style="background:conic-gradient({ACCENT} {pct}%, #DCEBFA 0)"><div class="donut-in"><b>{pct:.0f}%</b><span>Accuracy</span></div></div>', unsafe_allow_html=True)
+                d2.markdown(f"**{q_txt}**<br><span class='note'>คลาดเคลื่อนจากของจริง {w:.1f}%<br>ความแม่นยำ = 100 − WAPE</span>", unsafe_allow_html=True)
             st.markdown('<div class="card-t" style="margin-top:1rem">Sales by Day of Week</div>', unsafe_allow_html=True)
             dv = dow.reindex(DOW_ORDER).fillna(0)
             mx = max(dv.max(), 1)
-            bars = "".join(f'<div><i style="height:{8 + 52 * v / mx:.0f}px;background:{ACCENT if v == dv.max() else "#CFE0F7"}"></i>'
-                           f'{TH_DAY[d][:2] if d != "Thursday" else "พฤ"}</div>' for d, v in dv.items())
+            bars = "".join(
+                f'<div><i style="height:{8 + 52 * v / mx:.0f}px;background:{ACCENT if v == dv.max() else "#D6E8FA"}"></i>'
+                f'{TH_DAY[d][:2] if d != "Thursday" else "พฤ"}</div>' for d, v in dv.items())
             st.markdown(f'<div class="mini">{bars}</div>', unsafe_allow_html=True)
 
         with st.container(border=True):
@@ -521,11 +1089,6 @@ if page == "home":
                                 f'<div class="nm" title="{html.escape(nm)}">{html.escape(nm[:46])}{"…" if len(nm) > 46 else ""}</div>'
                                 f'<span class="lf">×{r["lift"]:.0f}</span></div>', unsafe_allow_html=True)
                 st.caption("ช่วงเทศกาล พ.ย.–ธ.ค. · ×N = ซื้อคู่กันบ่อยกว่าปกติกี่เท่า")
-
-        st.markdown(f'<div class="gift"><div style="font-size:1.8rem">🎁</div><div class="card-t" style="margin:.3rem 0 0">Festive Season Impact</div>'
-                    f'<div class="note">พ.ย.–ธ.ค. ยอดขายประมาณ <b>{festive_share:.0f}%</b> ของยอดทั้งหมด</div>'
-                    f'<div class="pbar"><div style="width:{min(festive_share, 100):.0f}%"></div></div>'
-                    f'<div class="note" style="margin-top:.3rem">เทียบสัดส่วนเวลา 2 เดือน เท่ากับ 17%</div></div>', unsafe_allow_html=True)
 
 # ======================================================================
 # ยอดขาย
